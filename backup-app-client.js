@@ -2,43 +2,64 @@
 const {
   CognitoIdentityProviderClient,
   ListUserPoolClientsCommand,
-  DescribeUserPoolClientCommand
+  DescribeUserPoolClientCommand,
 } = require("@aws-sdk/client-cognito-identity-provider");
 
 const fs = require("fs");
 
-async function backupUserPool() {
+async function backupUserPoolAppClient(userPoolId, region, backupDir) {
   const client = new CognitoIdentityProviderClient({
-    region: "ap-southeast-1",
+    region: region,
   });
 
   const listUserPoolClientsCommand = new ListUserPoolClientsCommand({
-    UserPoolId: "ap-southeast-1_PxRaR8tOO"
-  })
-  
-  const listUserPoolClientsRes = await client.send(listUserPoolClientsCommand)
-  const listUserPollClients = listUserPoolClientsRes.UserPoolClients
+    UserPoolId: userPoolId,
+  });
 
-  for(const appClient of listUserPollClients){
-    const describeClientParams = {
-        UserPoolId: appClient.UserPoolId,
-        ClientId: appClient.ClientId
-      };
-      console.log(describeClientParams)
+  const listUserPoolClientsRes = await client.send(listUserPoolClientsCommand);
+  const listUserPollClients = listUserPoolClientsRes.UserPoolClients;
+  console.log("App client count:", listUserPollClients.length);
+  for (const appClient of listUserPollClients) {
+    let logMsg = `- App Client \u001b[1;34m"${appClient.ClientName}\u001b[0m"`;
+    try {
       const describeUserPoolClientCommand = new DescribeUserPoolClientCommand({
         UserPoolId: appClient.UserPoolId,
-        ClientId: appClient.ClientId
-      })
+        ClientId: appClient.ClientId,
+      });
 
-      const describeUserPoolClientRes = await client.send(describeUserPoolClientCommand)
-      const clientDetails = describeUserPoolClientRes.UserPoolClient
-      const backupFilePath = `./backup-app-client/client-${clientDetails.ClientName}-backup.json`;
+      const describeUserPoolClientRes = await client.send(
+        describeUserPoolClientCommand
+      );
+      const clientDetails = describeUserPoolClientRes.UserPoolClient;
+      const backupFilePath = `${backupDir}/client-${clientDetails.ClientName}-backup.json`;
 
       fs.writeFileSync(backupFilePath, JSON.stringify(clientDetails, null, 2));
+      logMsg += ` backed up to: \u001b[1;34m${backupFilePath}\u001b[0m`;
+      //   console.log( "\u001b[1;31m Red message" );
+    } catch (error) {
+      console.log(error);
+    }
 
+    console.log(logMsg);
   }
 }
 
 (async () => {
-  await backupUserPool();
+  try {
+    const args = process.argv.splice(2);
+  
+    const region = args?.[0] || "ap-southeast-1";
+    const userPoolId = args?.[1] || "ap-southeast-1_xxx";
+    const backupDir = args?.[2] || "./backup-app-client";
+    if (!region) {
+      throw "Please input Region!";
+    }
+    if (!userPoolId) {
+      throw "Please input UserPoolId!";
+    }
+
+    await backupUserPoolAppClient(userPoolId, region, backupDir);
+  } catch (error) {
+    console.log(`\u001b[1:31m;${error}\u001b[0m`);
+  }
 })();

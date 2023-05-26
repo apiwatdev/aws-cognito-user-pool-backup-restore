@@ -1,5 +1,24 @@
 {
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.338.0"
-  }
+  },
+  "name": "yes",
+  "version": "1.0.0",
+  "main": "backup-app-client.js",
+  "devDependencies": {},
+  "scripts": {
+    "backup-app-client": "node backup-app-client",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apiwatdev/aws-cognito-user-pool-backup-restore.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/apiwatdev/aws-cognito-user-pool-backup-restore/issues"
+  },
+  "homepage": "https://github.com/apiwatdev/aws-cognito-user-pool-backup-restore#readme",
+  "description": ""
 }
