@@ -8,6 +8,7 @@
   "devDependencies": {},
   "scripts": {
     "backup-app-client": "node backup-app-client",
+    "restore-app-client": "node restore-app-client",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

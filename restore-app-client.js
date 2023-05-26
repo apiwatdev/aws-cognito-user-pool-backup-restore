@@ -1,70 +1,37 @@
 "use strict";
 const {
   CognitoIdentityProviderClient,
-  ListUserPoolClientsCommand,
-  DescribeUserPoolClientCommand,
   CreateUserPoolClientCommand,
-  UpdateUserPoolClientCommand,
 } = require("@aws-sdk/client-cognito-identity-provider");
 
 const fs = require("fs");
 
-async function backupUserPool() {
+async function restoreUserPoolAppClient(userPoolId, region, backupDir) {
   const client = new CognitoIdentityProviderClient({
-    region: "ap-southeast-1",
+    region: region,
   });
-  const backupDir = "backup-app-client";
-  const backupFiles = fs.readdirSync(backupDir);
+  const backupFiles = fs.readdirSync(`${backupDir}/${userPoolId}`);
 
   for (const file of backupFiles) {
     if (file.startsWith("client-") && file.endsWith("-backup.json")) {
-      const filePath = `${backupDir}/${file}`;
+      const filePath = `${backupDir}/${userPoolId}/${file}`;
       const clientDetails = JSON.parse(fs.readFileSync(filePath, "utf8"));
       const createClientCommand = new CreateUserPoolClientCommand({
         ...clientDetails,
-        GenerateSecret: true,
+        GenerateSecret: clientDetails?.ClientSecret ? true : false,
       });
       const clientApp = await client.send(createClientCommand);
-
-      const updateClientCommand = new UpdateUserPoolClientCommand({
-        UserPoolId: clientApp.UserPoolClient?.UserPoolId,
-        ClientId: clientApp.UserPoolClient?.ClientId,
-        ClientSecret: "123",
-      });
-
-      const updatedClient = await client.send(updateClientCommand);
-      console.log("Client secret key regenerated successfully.");
-      console.log(updatedClient);
+      console.log(
+        `App Client \u001b[1;34m'${clientApp.UserPoolClient.ClientName}'\u001b[0m restored.`
+      );
     }
   }
-  // const listUserPoolClientsCommand = new ListUserPoolClientsCommand({
-  //   UserPoolId: "ap-southeast-1_PxRaR8tOO",
-  // });
-
-  // const listUserPoolClientsRes = await client.send(listUserPoolClientsCommand);
-  // const listUserPollClients = listUserPoolClientsRes.UserPoolClients;
-
-  // for (const appClient of listUserPollClients) {
-  //   const describeClientParams = {
-  //     UserPoolId: appClient.UserPoolId,
-  //     ClientId: appClient.ClientId,
-  //   };
-  //   console.log(describeClientParams);
-  //   const describeUserPoolClientCommand = new DescribeUserPoolClientCommand({
-  //     UserPoolId: appClient.UserPoolId,
-  //     ClientId: appClient.ClientId,
-  //   });
-
-  //   const describeUserPoolClientRes = await client.send(
-  //     describeUserPoolClientCommand
-  //   );
-  //   const clientDetails = describeUserPoolClientRes.UserPoolClient;
-  //   const backupFilePath = `./backup-app-client/client-${clientDetails.ClientName}-backup.json`;
-
-  //   fs.writeFileSync(backupFilePath, JSON.stringify(clientDetails, null, 2));
-  // }
 }
 
 (async () => {
-  await backupUserPool();
+  const args = process.argv.splice(2);
+  const region = args?.[0] || "ap-southeast-1";
+  const userPoolId = args?.[1] || "ap-southeast-1_cAI8YJdDU";
+  const backupDir = args?.[2] || "./backup-app-client";
+  await restoreUserPoolAppClient(userPoolId, region, backupDir);
 })();

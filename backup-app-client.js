@@ -19,6 +19,11 @@ async function backupUserPoolAppClient(userPoolId, region, backupDir) {
   const listUserPoolClientsRes = await client.send(listUserPoolClientsCommand);
   const listUserPollClients = listUserPoolClientsRes.UserPoolClients;
   console.log("App client count:", listUserPollClients.length);
+  await fs.rmdirSync(`${backupDir}/${userPoolId}`, {
+    recursive: true,
+    force: true,
+  });
+  await fs.mkdirSync(`${backupDir}/${userPoolId}`);
   for (const appClient of listUserPollClients) {
     let logMsg = `- App Client \u001b[1;34m"${appClient.ClientName}\u001b[0m"`;
     try {
@@ -31,11 +36,11 @@ async function backupUserPoolAppClient(userPoolId, region, backupDir) {
         describeUserPoolClientCommand
       );
       const clientDetails = describeUserPoolClientRes.UserPoolClient;
-      const backupFilePath = `${backupDir}/client-${clientDetails.ClientName}-backup.json`;
+
+      const backupFilePath = `${backupDir}/${userPoolId}/client-${clientDetails.ClientName}-backup.json`;
 
       fs.writeFileSync(backupFilePath, JSON.stringify(clientDetails, null, 2));
       logMsg += ` backed up to: \u001b[1;34m${backupFilePath}\u001b[0m`;
-      //   console.log( "\u001b[1;31m Red message" );
     } catch (error) {
       console.log(error);
     }
@@ -47,7 +52,6 @@ async function backupUserPoolAppClient(userPoolId, region, backupDir) {
 (async () => {
   try {
     const args = process.argv.splice(2);
-  
     const region = args?.[0] || "ap-southeast-1";
     const userPoolId = args?.[1] || "ap-southeast-1_xxx";
     const backupDir = args?.[2] || "./backup-app-client";
